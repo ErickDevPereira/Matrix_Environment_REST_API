@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_restful import Api
 from typing import Dict, List
+import os
 
 class __Main:
 
@@ -27,18 +28,27 @@ class __Main:
 
 if __name__ == "__main__":
     try:
-        FILE = open("src/tokens.txt")
-        lines: List[str] = FILE.readlines()
-        safe_api_token: str = lines[1][:-1]
-        weather_api_token: str = lines[-1]
+        FILE = open("src/tokens.txt", 'r')
+        LINES: List[str] = FILE.readlines()
+        FILE.close()
+        safe_api_token: str = LINES[1][:-1]
+        weather_api_token: str = LINES[-1]
     except Exception as err:
         #Reading the tokens through I/O if the file isn't defined or has a problem.
         print(f"Couldn't read a file with the tokens. Please, give the correct tokens.\n{err}")
         safe_api_token: str = input("Your token to safe API:  ")
         weather_api_token: str = input("Your token to weather API:  ")
+        
+        if not os.path.exists('src'):
+            os.mkdir("src")
+        
+        FILE = open("src/tokens.txt", 'w')
+        FILE.write("safeapi\n" + safe_api_token + "weatherapi\n" + weather_api_token)
+        FILE.close()
     finally:
         server: __Main = __Main(safe_api_token = safe_api_token, weather_api_token = weather_api_token)
         from http_logic import HTTP
-        EnvironmentDataNow = HTTP.EnvironmentDataNow #importing the class that has the HTTP methods for the /actual_environment route.
-        http_initializer = HTTP(server.api, EnvironmentDataNow = EnvironmentDataNow)
+        ENVIRONMENT_DATA_NOW = HTTP.EnvironmentDataNow #importing the class that has the HTTP methods for the /actual_environment route.
+        FORECAST_ENVIRONMENT_DATA_NOW = HTTP.ForecastEnvironmentDataNow
+        http_initializer = HTTP(server.api, EnvironmentDataNow = ENVIRONMENT_DATA_NOW, ForecastEnvironmentDataNow = FORECAST_ENVIRONMENT_DATA_NOW)
         server.app.run(debug = True)
