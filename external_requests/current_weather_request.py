@@ -17,5 +17,5 @@ class CurrentWeatherRequest(RequestApi):
             raise requests.HTTPError(f"Something went wrong with the request to the WeatherAPI\nStatus: {self.__response.status_code}")
 
 if __name__ == '__main__':
-    weather = CurrentWeatherRequest(52.5200, 13.4050)
+    weather = CurrentWeatherRequest(2.5200, 11.4050)
     print(weather.get_response())

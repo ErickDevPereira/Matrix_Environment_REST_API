@@ -58,6 +58,10 @@ class HTTP:
                     self.__pressure_mb: float = self.__current_weather_json['current']['pressure_mb']
                     self.__humidity: float = self.__current_weather_json['current']['humidity']
                     self.__uv: float = self.__current_weather_json['current']['uv']
+                    self.__wind_dir: float | int = DataHandler.get_simple_direction(self.__current_weather_json['current']['wind_dir'])
+                    self.__precipitation: float = self.__current_weather_json['current']['precip_mm']
+                    self.__dirty_is_day: int = self.__current_weather_json['current']['is_day']
+                    self.__is_day: str = 'yes' if bool(self.__dirty_is_day) else 'no'
                 except Exception as err:
                     abort(500, message = f'Something went wrong on the server.\nStatus: {err}')
                 #Now, we will lead with the ionizing radiation request
@@ -87,9 +91,12 @@ class HTTP:
                 "location" : self.__location,
                 "temperature(C)" : self.__temp_c,
                 "wind_speed(km/h)" : self.__wind_kph,
+                "wind_dir(deg)" : self.__wind_dir,
                 "pressure(mb)" : self.__pressure_mb,
                 "humidity(%)" : self.__humidity,
                 "uv" : self.__uv,
+                "precipitation(mm)" : self.__precipitation,
+                "is_day" : self.__is_day,
                 "ionizing_radiation(cpm)" : self.__ionizing_radiation_data
             } #This is the most basic json that the server will return to the user.
 

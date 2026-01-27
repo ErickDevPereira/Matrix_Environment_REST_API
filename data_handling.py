@@ -8,13 +8,13 @@ class DataHandler:
     @staticmethod
     def get_fair_radiation(rad_data: List[Dict[str, float]], radius: int) -> float:
         #Vector of displacements
-        displacements = np.array([np.array([rad_data[_]['lon'], rad_data[_]['lat']]) for _ in range(len(rad_data))])
+        displacements: np.ndarray = np.array([np.array([rad_data[_]['lon'], rad_data[_]['lat']]) for _ in range(len(rad_data))])
         #Vector of weights
-        weights = np.array([radius - np.sqrt(np.inner(displacements[_], displacements[_])) for _ in range(len(displacements))])
+        weights: np.ndarray = np.array([radius - np.sqrt(np.inner(displacements[_], displacements[_])) for _ in range(len(displacements))])
         #Vector of radiations
-        radiations = np.array([rad["radiation"] for rad in rad_data])
+        radiations: np.ndarray = np.array([rad["radiation"] for rad in rad_data])
         #Real data average taken from the formula avg = <weights, radiations> / sum(weights)
-        real_avg = np.inner(weights, radiations) / np.sum(weights)
+        real_avg: float = np.inner(weights, radiations) / np.sum(weights)
         return real_avg
 
     @staticmethod
@@ -71,3 +71,62 @@ class DataHandler:
             ]
         
         return output_JSON
+    
+    @staticmethod
+    def get_simple_direction(wind_dir: str) -> float | int:
+        
+        match(wind_dir):
+
+            case 'N':
+                return 0
+            
+            case 'NNE':
+                return 22.5
+            
+            case 'NE':
+                return 45
+            
+            case 'ENE':
+                return 67.5
+            
+            case 'E':
+                return 90
+            
+            case 'ESE':
+                return 112.5
+            
+            case 'SE':
+                return 135
+            
+            case 'SSE':
+                return 157.5
+            
+            case 'S':
+                return 180
+            
+            case 'SSW':
+                return 202.5
+            
+            case 'SW':
+                return 225
+            
+            case 'WSW':
+                return 247.5
+            
+            case 'W':
+                return 270
+            
+            case 'WNW':
+                return 292.5
+            
+            case 'NW':
+                return 315
+            
+            case 'NNW':
+                return 337.5
+            
+            case _:
+                return "N/A"
+
+if __name__ == '__main__':
+    print(DataHandler.get_simple_direction('WSW'))
