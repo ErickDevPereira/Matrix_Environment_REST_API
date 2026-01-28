@@ -1,3 +1,4 @@
+from mysql.connector import CMySQLConnection, MySQLConnection, connect
 from os import remove, path
 from typing import Tuple, Any, List
 
@@ -16,3 +17,14 @@ class IoMySQL:
     def remove_credentials() -> None:
         if path.exists("src/mysql_credentials.txt"):
             remove("src/mysql_credentials.txt")
+    
+    @staticmethod
+    def get_MySQL_conn() -> CMySQLConnection | MySQLConnection:
+        username, password = IoMySQL.get_mysql_credentials()
+        db = connect(
+            host = 'localhost',
+            username = username,
+            password = password,
+            database = 'matrix_environment_db'
+        )
+        return db

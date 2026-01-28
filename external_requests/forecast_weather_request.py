@@ -22,4 +22,6 @@ class ForecastWeatherRequest(RequestApi):
 if __name__ == "__main__":
     forecast = ForecastWeatherRequest(48.8567, 2.3508)
     from pprint import pprint
-    pprint(forecast.get_response())
+    days = forecast.get_response()['forecast']['forecastday']
+    for day in days:
+        pprint(day['hour'][0])

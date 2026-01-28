@@ -2,10 +2,11 @@ from flask import request
 from flask_restful import reqparse, Resource, abort, Api
 from typing import Dict, Tuple, Any, List
 from abc import ABC, abstractmethod
-from external_requests import CurrentWeatherRequest, IonizingRadiationRequest
+from external_requests import CurrentWeatherRequest, IonizingRadiationRequest, ForecastWeatherRequest
 from data_handling import DataHandler
 import requests
 import math
+from db import DataManipulationLanguage, DataDefinitionLanguage, IoMySQL
 
 class HTTP:
 
@@ -138,6 +139,40 @@ class HTTP:
             self.longitude: float = request.args.get("longitude", type = float)
 
             self.auth(False)
+
+            self.__forecast_wather: ForecastWeatherRequest = ForecastWeatherRequest(latitude=self.latitude, longitude=self.longitude)
+            try:
+                self.__full_JSON = self.__forecast_wather.get_response()
+            except requests.HTTPError as err:
+                abort(500, message = str(err))
+            else:
+                #Here is the situation when everything went fine with the request to the API.
+                self.__filtered_data = self.__full_JSON['forecast']['forecastday']
+                self.__db = IoMySQL.get_MySQL_conn() #Gets connection with MySQL.
+                self.__dml = DataManipulationLanguage() #Creates a dml object
+                self.__atm = self.__dml.Atmosphere() #Creates an atmosphere object
+                self.__states = self.__dml.State()
+                self.__id = 0
+                for day in self.__filtered_data:
+                    self.__hours = day['hour']
+                    for hour in self.__hours:
+                        self.__atm.load(self.__db,
+                                        rec_id = self.__id,
+                                        temperature = hour['temp_c'],
+                                        uv = hour['uv'],
+                                        pressure = hour['pressure_mb'],
+                                        humidity = hour['humidity'],
+                                        precipitation = hour['precip_mm'],
+                                        wind_speed = hour['wind_kph'],
+                                        cloud = hour['cloud'])
+                        self.__states.load(self.__db,
+                                        rec_id = self.__id,
+                                        is_day = hour['is_day'],
+                                        will_it_rain = hour['will_it_rain'],
+                                        will_it_snow = hour['will_it_snow'],
+                                        time = str(hour['time'])
+                                        )
+                        self.__id += 1
 
             return {"message": "You've not chosen the detailed option for forecast"}, 200
 

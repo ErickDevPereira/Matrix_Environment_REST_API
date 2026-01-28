@@ -15,14 +15,14 @@ class DataDefinitionLanguage:
         self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("CREATE DATABASE IF NOT EXISTS matrix_environment_db")
         self.__cursor.close()
-        self.kill_MySQL_connection(self.__db)
+        self.__kill_MySQL_connection(self.__db)
         #Creating a connection to the database
-        self.__db = self.get_MySQL_connection()
+        self.__db = self.__get_MySQL_connection(self.__username, self.__password)
         #Creating the tables over the database
         self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS atmosphere (
-                        rec_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+                        rec_id INT UNSIGNED PRIMARY KEY,
                         temperature DECIMAL(4, 1) NOT NULL,
                         uv DECIMAL(3, 1) NOT NULL,
                         pressure DECIMAL(5, 1) NOT NULL,
@@ -40,20 +40,21 @@ class DataDefinitionLanguage:
                         is_day TINYINT NOT NULL,
                         will_it_rain TINYINT NOT NULL,
                         will_it_snow TINYINT NOT NULL,
+                        time DATETIME NOT NULL,
                         FOREIGN KEY (rec_id) REFERENCES atmosphere (rec_id)
                     )
                     """)
         self.__cursor.close()
-        self.kill_MySQL_connection(self.__db)
+        self.__kill_MySQL_connection(self.__db)
     
-    def get_MySQL_connection(self) -> conn.CMySQLConnection | conn.MySQLConnection:
+    def __get_MySQL_connection(self, username: str, password: str) -> conn.CMySQLConnection | conn.MySQLConnection:
         self.__db: conn.CMySQLConnection | conn.MySQLConnection = conn.connect(
-            username = self.__username,
-            password = self.__password,
+            username = username,
+            password = password,
             host = 'localhost',
             database = 'matrix_environment_db'
         )
         return self.__db
     
-    def kill_MySQL_connection(self, conn: conn.CMySQLConnection | conn.MySQLConnection) -> None:
+    def __kill_MySQL_connection(self, conn: conn.CMySQLConnection | conn.MySQLConnection) -> None:
         conn.close()

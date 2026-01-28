@@ -58,7 +58,7 @@ if __name__ == "__main__":
                 print("The username or password is wrong! Try again")
             else:
                 FILE: Any = open("src/mysql_credentials.txt", 'w')
-                FILE.write(f"username:\n{MySQL_username}\npassword:\n{MySQL_username}") #Writing data on the file
+                FILE.write(f"username:\n{MySQL_username}\npassword:\n{MySQL_password}") #Writing data on the file
                 FILE.close()
                 break
         #Creating the API itself
