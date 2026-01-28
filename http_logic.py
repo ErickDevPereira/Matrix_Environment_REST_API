@@ -6,7 +6,7 @@ from external_requests import CurrentWeatherRequest, IonizingRadiationRequest, F
 from data_handling import DataHandler
 import requests
 import math
-from db import DataManipulationLanguage, DataDefinitionLanguage, IoMySQL
+from db import DataManipulationLanguage, DataDefinitionLanguage, IoMySQL, DataQueryLanguage
 
 class HTTP:
 
@@ -173,8 +173,15 @@ class HTTP:
                                         time = str(hour['time'])
                                         )
                         self.__id += 1
-
-            return {"message": "You've not chosen the detailed option for forecast"}, 200
+                self.__dql = DataQueryLanguage()
+                self.__forecast = self.__dql.Forecast()
+                self.__SUB_JSON1: Dict[str, Dict[str, float]] = self.__forecast.get_avgs(self.__db)
+                self.__SUB_JSON2: Dict[str, Dict[str, Dict[str, float | int]]] = self.__forecast.get_extremes(self.__db)
+                self.__states.rm(self.__db, 'states') #Deleting data from states table.
+                self.__atm.rm(self.__db, 'atmosphere') #Deleting data from atmosphere table.
+                self.__db.close() #Closing the connection to the database.
+                self.__JSON = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2}
+                return self.__JSON, 200
 
     def __init__(self, api: Api, **kwargs):
         api.add_resource(kwargs['EnvironmentDataNow'], "/actual_environment")

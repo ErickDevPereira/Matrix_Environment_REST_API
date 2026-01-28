@@ -9,6 +9,12 @@ class DataManipulationLanguage:
         @abstractmethod
         def load(self) -> None:
             pass
+
+        def rm(self, MySQL_conn: CMySQLConnection | MySQLConnection, table: str):
+            self.__cursor: Any = MySQL_conn.cursor()
+            self.__cursor.execute(f"DELETE FROM {table}")
+            MySQL_conn.commit()
+            self.__cursor.close()
     
     class Atmosphere(DataSet):
 
@@ -30,7 +36,7 @@ class DataManipulationLanguage:
                                   """, (rec_id, temperature, uv, pressure, humidity, precipitation, wind_speed, cloud))
             MySQL_conn.commit()
             self.__cursor.close()
-
+        
     class State(DataSet):
 
         def load(self,
