@@ -7,6 +7,8 @@ from data_handling import DataHandler
 import requests
 import math
 from db import DataManipulationLanguage, DataDefinitionLanguage, IoMySQL, DataQueryLanguage
+from os import urandom
+from mysql.connector import errors
 
 class HTTP:
 
@@ -150,14 +152,23 @@ class HTTP:
                 self.__filtered_data = self.__full_JSON['forecast']['forecastday']
                 self.__db = IoMySQL.get_MySQL_conn() #Gets connection with MySQL.
                 self.__dml = DataManipulationLanguage() #Creates a dml object
+                self.__token = self.__dml.RequestForecastToken()
                 self.__atm = self.__dml.Atmosphere() #Creates an atmosphere object
                 self.__states = self.__dml.State()
                 self.__id = 0
+                while True:
+                    try:
+                        self.__hex_token = urandom(8).hex()
+                        self.__token.load(self.__db, token = self.__hex_token)
+                    except errors.IntegrityError:
+                        pass
+                    else:
+                        break
                 for day in self.__filtered_data:
                     self.__hours = day['hour']
                     for hour in self.__hours:
                         self.__atm.load(self.__db,
-                                        rec_id = self.__id,
+                                        rec_id = str(self.__id) + self.__hex_token,
                                         temperature = hour['temp_c'],
                                         uv = hour['uv'],
                                         pressure = hour['pressure_mb'],
@@ -166,7 +177,7 @@ class HTTP:
                                         wind_speed = hour['wind_kph'],
                                         cloud = hour['cloud'])
                         self.__states.load(self.__db,
-                                        rec_id = self.__id,
+                                        rec_id = str(self.__id) + self.__hex_token,
                                         is_day = hour['is_day'],
                                         will_it_rain = hour['will_it_rain'],
                                         will_it_snow = hour['will_it_snow'],
@@ -175,10 +186,11 @@ class HTTP:
                         self.__id += 1
                 self.__dql = DataQueryLanguage()
                 self.__forecast = self.__dql.Forecast()
-                self.__SUB_JSON1: Dict[str, Dict[str, float]] = self.__forecast.get_avgs(self.__db)
-                self.__SUB_JSON2: Dict[str, Dict[str, Dict[str, float | int]]] = self.__forecast.get_extremes(self.__db)
-                self.__states.rm(self.__db, 'states') #Deleting data from states table.
-                self.__atm.rm(self.__db, 'atmosphere') #Deleting data from atmosphere table.
+                self.__SUB_JSON1: Dict[str, Dict[str, float]] = self.__forecast.get_avgs(self.__db, token = self.__hex_token)
+                self.__SUB_JSON2: Dict[str, Dict[str, Dict[str, float | int]]] = self.__forecast.get_extremes(self.__db, token = self.__hex_token)
+                self.__states.rm(self.__db, token = self.__hex_token) #Deleting data from states table.
+                self.__atm.rm(self.__db, token = self.__hex_token) #Deleting data from atmosphere table.
+                self.__token.rm(self.__db, token = self.__hex_token)
                 self.__db.close() #Closing the connection to the database.
                 self.__JSON = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2}
                 return self.__JSON, 200

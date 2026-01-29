@@ -9,13 +9,28 @@ class DataManipulationLanguage:
         @abstractmethod
         def load(self) -> None:
             pass
+            
+        @abstractmethod
+        def rm(self) -> None:
+            pass
+    
+    class RequestForecastToken(DataSet):
 
-        def rm(self, MySQL_conn: CMySQLConnection | MySQLConnection, table: str):
+        def load(self,
+                MySQL_conn: CMySQLConnection | MySQLConnection,
+                token: str) -> None:
+
             self.__cursor: Any = MySQL_conn.cursor()
-            self.__cursor.execute(f"DELETE FROM {table}")
+            self.__cursor.execute("INSERT INTO request_forecast_token (req_token) VALUES (%s)", (token,))
             MySQL_conn.commit()
             self.__cursor.close()
-    
+
+        def rm(self, MySQL_conn: CMySQLConnection | MySQLConnection, token: str):
+            self.__cursor: Any = MySQL_conn.cursor()
+            self.__cursor.execute("DELETE FROM request_forecast_token WHERE req_token = %s", (token,))
+            MySQL_conn.commit()
+            self.__cursor.close()
+
     class Atmosphere(DataSet):
 
         def load(self,
@@ -37,6 +52,12 @@ class DataManipulationLanguage:
             MySQL_conn.commit()
             self.__cursor.close()
         
+        def rm(self, MySQL_conn: CMySQLConnection | MySQLConnection, token: str):
+            self.__cursor: Any = MySQL_conn.cursor()
+            self.__cursor.execute("DELETE FROM atmosphere WHERE RIGHT(rec_id, 16) = %s", (token,))
+            MySQL_conn.commit()
+            self.__cursor.close()
+        
     class State(DataSet):
 
         def load(self,
@@ -52,5 +73,11 @@ class DataManipulationLanguage:
                                 INSERT INTO states (rec_id, is_day, will_it_rain, will_it_snow, time)
                                 VALUES (%s, %s, %s, %s, %s)
                                 """, (rec_id, is_day, will_it_rain, will_it_snow, time))
+            MySQL_conn.commit()
+            self.__cursor.close()
+        
+        def rm(self, MySQL_conn: CMySQLConnection | MySQLConnection, token: str):
+            self.__cursor: Any = MySQL_conn.cursor()
+            self.__cursor.execute("DELETE FROM states WHERE RIGHT(rec_id, 16) = %s", (token,))
             MySQL_conn.commit()
             self.__cursor.close()

@@ -1,8 +1,3 @@
-class A:
+from os import urandom
 
-    @staticmethod
-    def sum(a, b):
-        return a + b
-
-a = A()
-print(A.sum(1, 1))
+print(type(urandom(8).hex()))

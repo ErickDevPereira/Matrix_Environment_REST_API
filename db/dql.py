@@ -6,7 +6,7 @@ class DataQueryLanguage:
     class Forecast:
 
         @staticmethod
-        def get_avgs(db: CMySQLConnection | MySQLConnection) -> Dict[str, Dict[str, float]]:
+        def get_avgs(db: CMySQLConnection | MySQLConnection, token: str) -> Dict[str, Dict[str, float]]:
             cursor: Any = db.cursor()
             SQL: str = """
                         SELECT
@@ -38,6 +38,8 @@ class DataQueryLanguage:
                             FROM
                                 atmosphere AS a INNER JOIN states AS s
                                 ON a.rec_id = s.rec_id
+                            WHERE
+                                RIGHT(s.rec_id, 16) = %s
                             GROUP BY
                                 day
                             ORDER BY
@@ -50,14 +52,14 @@ class DataQueryLanguage:
                                 atmosphere AS a INNER JOIN states AS s
                                 ON a.rec_id = s.rec_id
                             WHERE
-                                s.is_day = 1
+                                s.is_day = 1 AND RIGHT(s.rec_id, 16) = %s
                             GROUP BY
                                 day) AS sq2
                             ON sq1.day = sq2.day
                         ORDER BY
                             sq1.day
                         """
-            cursor.execute(SQL)
+            cursor.execute(SQL, (token, token))
             days: List[Tuple[str, float, float, float, float, float, float, float]] = cursor.fetchall()
             cursor.close()
             treated_data: Dict[str, Dict[str, float]] = dict()
@@ -74,7 +76,7 @@ class DataQueryLanguage:
             return treated_data
 
         @staticmethod
-        def get_extremes(db: CMySQLConnection | MySQLConnection) -> Dict[str, Dict[str, Dict[str, float | int]]]:
+        def get_extremes(db: CMySQLConnection | MySQLConnection, token: str) -> Dict[str, Dict[str, Dict[str, float | int]]]:
             cursor: Any = db.cursor()
             SQL: str = """
                         SELECT
@@ -90,12 +92,14 @@ class DataQueryLanguage:
                         FROM
                             atmosphere AS a INNER JOIN states AS s
                             ON a.rec_id = s.rec_id
+                        WHERE
+                            RIGHT(a.rec_id, 16) = %s
                         GROUP BY
                             day
                         ORDER BY
                             day ASC
                         """
-            cursor.execute(SQL)
+            cursor.execute(SQL, (token,))
             days: List[Tuple[str, float, float, float, float, int, int, float, float]] = cursor.fetchall()
             cursor.close()
             treated_data: Dict[str, Dict[str, Dict[str, float | int]]] = dict()

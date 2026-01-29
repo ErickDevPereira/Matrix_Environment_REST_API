@@ -19,10 +19,18 @@ class DataDefinitionLanguage:
         #Creating a connection to the database
         self.__db = self.__get_MySQL_connection(self.__username, self.__password)
         #Creating the tables over the database
+        self.__cursor =  self.__db.cursor()
+        self.__cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS request_forecast_token (
+                        token_id INT PRIMARY KEY AUTO_INCREMENT,
+                        req_token VARCHAR(16)
+                    )
+                    """)
+        self.__cursor.close()
         self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS atmosphere (
-                        rec_id INT UNSIGNED PRIMARY KEY,
+                        rec_id VARCHAR(19) PRIMARY KEY,
                         temperature DECIMAL(4, 1) NOT NULL,
                         uv DECIMAL(3, 1) NOT NULL,
                         pressure DECIMAL(5, 1) NOT NULL,
@@ -36,7 +44,7 @@ class DataDefinitionLanguage:
         self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS states (
-                        rec_id INT UNSIGNED,
+                        rec_id VARCHAR(19),
                         is_day TINYINT NOT NULL,
                         will_it_rain TINYINT NOT NULL,
                         will_it_snow TINYINT NOT NULL,
