@@ -18,10 +18,3 @@ class ForecastWeatherRequest(RequestApi):
             return self.__response.json()
         else:
             raise requests.HTTPError(f"Something went wrong with the request to the WeatherAPI. Status: {self.__response.status_code}")
-
-if __name__ == "__main__":
-    forecast = ForecastWeatherRequest(48.8567, 2.3508)
-    from pprint import pprint
-    days = forecast.get_response()['forecast']['forecastday']
-    for day in days:
-        pprint(day['hour'][0])

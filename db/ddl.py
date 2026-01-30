@@ -1,4 +1,5 @@
 import mysql.connector as conn
+from typing import Any
 
 class DataDefinitionLanguage:
 
@@ -11,21 +12,21 @@ class DataDefinitionLanguage:
             host = 'localhost'
         ) #Creating a connection to MySQL
         #Creating the database
-        self.__cursor: conn.MySQLCursor = self.__db.cursor()
+        self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("CREATE DATABASE IF NOT EXISTS matrix_environment_db")
         self.__cursor.close()
         self.__kill_MySQL_connection(self.__db)
         #Creating a connection to the database
         self.__db: conn.CMySQLConnection | conn.MySQLConnection = self.__get_MySQL_connection(self.__username, self.__password)
         #Creating the tables over the database
-        self.__cursor: conn.MySQLCursor =  self.__db.cursor()
+        self.__cursor: Any =  self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS request_forecast_token (
                         req_token VARCHAR(16) PRIMARY KEY
                     )
                     """)
         self.__cursor.close()
-        self.__cursor: conn.MySQLCursor = self.__db.cursor()
+        self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS opinions (
                         opnion_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -39,7 +40,7 @@ class DataDefinitionLanguage:
                     )
                             """)
         self.__cursor.close()
-        self.__cursor: conn.MySQLCursorny = self.__db.cursor()
+        self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS atmosphere (
                         rec_id VARCHAR(19) PRIMARY KEY,
@@ -53,7 +54,7 @@ class DataDefinitionLanguage:
                     )
                     """)
         self.__cursor.close()
-        self.__cursor: conn.MySQLCursor = self.__db.cursor()
+        self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS states (
                         rec_id VARCHAR(19),

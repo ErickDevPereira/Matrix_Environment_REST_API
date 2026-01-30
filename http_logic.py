@@ -114,6 +114,7 @@ class HTTP:
             if self.detail_bool: # The user requested detailed data about the environment right now.
                 
                 del self.__BASE_JSON['ionizing_radiation(cpm)']
+                del self.__BASE_JSON['temperature(°C)']
                 self.__BASE_JSON.update(
                                 {
                                 "temperature" : {"°C" : self.__temp_c, "°F" : DataHandler.transform_c_in_f(self.__temp_c),"k" : DataHandler.transform_c_in_k(self.__temp_c)},

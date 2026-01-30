@@ -1,5 +1,5 @@
-from typing import Dict, Tuple, List
-from mysql.connector import CMySQLConnection, MySQLConnection, MySQLCursor
+from typing import Dict, Tuple, List, Any
+from mysql.connector import CMySQLConnection, MySQLConnection
 
 class DataQueryLanguage:
 
@@ -7,7 +7,7 @@ class DataQueryLanguage:
 
         @staticmethod
         def get_avgs(db: CMySQLConnection | MySQLConnection, token: str) -> Dict[str, Dict[str, float]]:
-            cursor: MySQLCursor = db.cursor()
+            cursor: Any = db.cursor()
             SQL: str = """
                         SELECT
                             sq1.day,
@@ -77,7 +77,7 @@ class DataQueryLanguage:
 
         @staticmethod
         def get_extremes(db: CMySQLConnection | MySQLConnection, token: str) -> Dict[str, Dict[str, Dict[str, float | int]]]:
-            cursor: MySQLCursor = db.cursor()
+            cursor: Any = db.cursor()
             SQL: str = """
                         SELECT
                             DATE(s.time) AS day,
@@ -131,7 +131,7 @@ class DataQueryLanguage:
         @staticmethod
         def get_opinions(db: CMySQLConnection | MySQLConnection, latitude: str, longitude: str) -> List[str]:
 
-            cursor: MySQLCursor = db.cursor()
+            cursor: Any = db.cursor()
             cursor.execute(
                         """
                         SELECT
@@ -150,7 +150,7 @@ class DataQueryLanguage:
         @staticmethod
         def check_token(db: CMySQLConnection | MySQLConnection, token: str) -> bool:
 
-            cursor: MySQLCursor = db.cursor()
+            cursor: Any = db.cursor()
             cursor.execute("SELECT token FROM opinions WHERE token = %s", (token,))
             data: List[Tuple[str]] = cursor.fetchall()
             
