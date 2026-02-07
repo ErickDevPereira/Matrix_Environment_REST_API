@@ -49,7 +49,7 @@ class HTTP:
     class EnvironmentDataNow(ForceGET, Util, Resource):
 
         def get(self) -> Tuple[Dict[str, Any], int]:
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.__std_radius: int = 10 #The standard radius to search for ionizing radiation measurement is 10km
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
@@ -102,6 +102,7 @@ class HTTP:
                         self.__ionizing_radiation_data: float = DataHandler.get_fair_radiation(self.__list_of_ir, radius = self.__real_radius) #Average of the ionizing radiations with cpm as unit.
             
             self.__BASE_JSON: Dict[str, Any] = {
+                "rest_of_time_for_the_jwt_token": self.exp_t,
                 "location" : self.__location,
                 "temperature(°C)" : self.__temp_c,
                 "wind_speed(km/h)" : self.__wind_kph,
@@ -140,7 +141,7 @@ class HTTP:
     class ForecastEnvironmentData(ForceGET, Util, Resource):
 
         def get(self) -> Tuple[Dict[str, Any], int]:
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
 
@@ -196,7 +197,7 @@ class HTTP:
                 self.__atm.rm(self.__db, token = self.__hex_token) #Deleting data from atmosphere table.
                 self.__token.rm(self.__db, token = self.__hex_token)
                 self.__db.close() #Closing the connection to the database.
-                self.__JSON: Dict[str, Any] = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2}
+                self.__JSON: Dict[str, Any] = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2, "rest_of_time_for_the_jwt_token": self.exp_t}
                 return self.__JSON, 200
 
     class Opinions(ForceGET, Util, Resource):
@@ -211,7 +212,7 @@ class HTTP:
 
         def get(self) -> Tuple[Dict[str, str | int | List[str]], int]:
             
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
 
@@ -224,12 +225,12 @@ class HTTP:
             self.__commments: List[str] = self.__dql.Opinion().get_opinions(self.__db, self.__latitude_str, self.__longitude_srt)
             self.__db.close()
             if len(self.__commments) == 0:
-                return {"message": f"No comments registered for {self.__latitude_str}, {self.__longitude_srt}"}, 200
+                return {"message": f"No comments registered for {self.__latitude_str}, {self.__longitude_srt}", "rest_of_time_for_the_jwt_token": self.exp_t}, 200
             else:
-                return {"number_of_comments" : len(self.__commments), "comments" : self.__commments}, 200
+                return {"number_of_comments" : len(self.__commments), "comments" : self.__commments, "rest_of_time_for_the_jwt_token": self.exp_t}, 200
 
         def post(self) -> Tuple[Dict[str, str], int]:
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
             self.auth(False)
@@ -255,10 +256,10 @@ class HTTP:
                                     latitude = f'{self.latitude:.3f}',
                                     longitude = f'{self.longitude:.3f}')
             self.__db.close()
-            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment"}, 201
+            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment", "rest_of_time_for_the_jwt_token": self.exp_t}, 201
 
         def patch(self) -> Tuple[Dict[str, str], int]:
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.__opinion_JSON: Any = self.__opinions_args.parse_args()
             self.__edit_token: None | str = self.__opinion_JSON['token']
             self.__edit_text: None | str = self.__opinion_JSON['text']
@@ -278,11 +279,11 @@ class HTTP:
             except Exception as err:
                 abort(500, message = f"Something went wrong on the database or application. Error: {err}")
             else:
-                return {"message" : "text was changed with success"}, 200
+                return {"message" : "text was changed with success", "rest_of_time_for_the_jwt_token": self.exp_t}, 200
 
         def delete(self) -> Tuple[Dict[str, str], int]:
 
-            self.uid: int = auth_jwt()
+            self.uid, self.exp_t = auth_jwt()
             self.__opinion_JSON: Any = self.__opinions_args.parse_args()
             self.__del_token: None | str = self.__opinion_JSON['token']
 
@@ -302,7 +303,7 @@ class HTTP:
                     abort(500, message = "Something went wrong on the database of the server! Try later")
                 else:
                     self.__db.close()
-                    return {"message": "The comment was deleted successfully!"}, 200
+                    return {"message": "The comment was deleted successfully!", "rest_of_time_for_the_jwt_token": self.exp_t}, 200
             self.__db.close()
             abort(400, message = "There is no comment with such token")
         

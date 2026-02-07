@@ -19,7 +19,7 @@ class JwtGen:
     #This method wasn't used, but I wrote it because it can be useful if I wish to go further with this project.
     def refresh(self, jwt_token: str) -> str:
         self.__PAYLOAD: Dict[str, int | datetime] = jwt.decode(jwt_token, key = self.__SECRET_KEY, algorithms = self.__ALGORITHM)
-        if self.__PAYLOAD['exp'] - datetime.utcnow() < timedelta(minutes = self.__REFRESH_WHEN_LACKING_MINUTES):
+        if datetime.utcfromtimestamp(self.__PAYLOAD['exp']) - datetime.utcnow() < timedelta(minutes = self.__REFRESH_WHEN_LACKING_MINUTES):
             return self.__enconde_jwt_token(self.__PAYLOAD['uid'])
         else:
             return jwt_token

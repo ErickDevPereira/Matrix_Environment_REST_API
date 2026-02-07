@@ -22,4 +22,5 @@ def auth_jwt() -> Tuple[int, str]:
         abort(500, message = "Internal server error >>" + str(err))
     else:
         uid: int = int(payload['uid'])
-        return uid
+        exp_time: str = str(datetime.utcfromtimestamp(payload['exp']) - datetime.utcnow()) #Rest of time for this token
+        return uid, exp_time
