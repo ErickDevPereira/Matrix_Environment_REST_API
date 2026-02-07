@@ -153,5 +153,39 @@ class DataQueryLanguage:
             cursor: Any = db.cursor()
             cursor.execute("SELECT token FROM opinions WHERE token = %s", (token,))
             data: List[Tuple[str]] = cursor.fetchall()
-            
+            cursor.close()
             return bool(data)
+
+    class Login:
+
+        @staticmethod
+        def check_api_key(db: CMySQLConnection | MySQLConnection, api_key: str) -> int | None:
+
+            cursor: Any = db.cursor()
+            cursor.execute("SELECT uid FROM users WHERE api_key = %s", (api_key,))
+            dirt_data = cursor.fetchall()
+            cursor.close()
+            if len(dirt_data) == 0:
+                return None #There is no such api key registered on the database
+            return int(dirt_data[0][0]) #user id for this api key
+        
+        @staticmethod
+        def get_user_by_id(db: CMySQLConnection | MySQLConnection, uid: int) -> Dict[str, str] | None:
+
+            cursor: Any = db.cursor()
+            cursor.execute("SELECT email, api_key FROM users WHERE uid = %s", (uid,))
+            dirt_data = cursor.fetchall()
+            cursor.close()
+            if len(dirt_data) == 0:
+                return None
+            return {"email": dirt_data[0][0], "werkzeug_api_key": dirt_data[0][1]}
+
+        @staticmethod
+        def get_uid(db: CMySQLConnection | MySQLConnection, email: str) -> int | None:
+
+            cursor: Any = db.cursor()
+            cursor.execute("SELECT uid FROM users WHERE email = %s", (email,))
+            dirt_data = cursor.fetchall()
+            cursor.close()
+            result = None if not bool(dirt_data) else int(dirt_data[0][0])
+            return result

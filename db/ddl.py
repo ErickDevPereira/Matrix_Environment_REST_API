@@ -19,10 +19,25 @@ class DataDefinitionLanguage:
         #Creating a connection to the database
         self.__db: conn.CMySQLConnection | conn.MySQLConnection = self.__get_MySQL_connection(self.__username, self.__password)
         #Creating the tables over the database
+        self.__cursor: Any = self.__db.cursor()
+        self.__cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            uid INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+                            first_name VARCHAR(50) NOT NULL,
+                            last_name VARCHAR(50) NOT NULL,
+                            email VARCHAR(100) NOT NULL,
+                            api_key VARCHAR(700) NOT NULL,
+                            CONSTRAINT singular_key UNIQUE(api_key),
+                            CONSTRAINT singular_email UNIQUE(email)
+                        )
+                            """)
+        self.__cursor.close()
         self.__cursor: Any =  self.__db.cursor()
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS request_forecast_token (
-                        req_token VARCHAR(16) PRIMARY KEY
+                        req_token VARCHAR(16) PRIMARY KEY,
+                        uid INT UNSIGNED NOT NULL,
+                        FOREIGN KEY (uid) REFERENCES users(uid)
                     )
                     """)
         self.__cursor.close()
@@ -30,13 +45,12 @@ class DataDefinitionLanguage:
         self.__cursor.execute("""
                     CREATE TABLE IF NOT EXISTS opinions (
                         opnion_id INT PRIMARY KEY AUTO_INCREMENT,
-                        name VARCHAR(100),
                         text VARCHAR(1024) NOT NULL,
                         token VARCHAR(16) NOT NULL,
                         latitude VARCHAR(6) NOT NULL,
                         longitude VARCHAR(7) NOT NULL,
                         post_date DATETIME DEFAULT NOW(),
-                        FOREIGN KEY (token) REFERENCES request_forecast_token (req_token)
+                        FOREIGN KEY (token) REFERENCES request_forecast_token( req_token )
                     )
                             """)
         self.__cursor.close()

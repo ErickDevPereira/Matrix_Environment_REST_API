@@ -2,8 +2,11 @@ from flask import Flask
 from flask_restful import Api
 from typing import Dict, List, Any
 import os
+from dotenv import load_dotenv
 from db import IoMySQL, DataDefinitionLanguage
 import mysql.connector as MySQL
+
+load_dotenv("src/.env")
 
 class __Main:
 
@@ -54,7 +57,8 @@ if __name__ == "__main__":
                 MySQL_username: str = input("Username to MySQL (you can try 'root' if you don't know it):  ") #MySQL username
                 MySQL_password: str = input("Password to MySQL:  ") #MySQL password
                 ddl: DataDefinitionLanguage = DataDefinitionLanguage(MySQL_username, MySQL_password) #Automate the creation of the database and its tables if they don't exist.
-            except MySQL.errors.ProgrammingError:
+            except MySQL.errors.ProgrammingError as err:
+                print(err)
                 print("The username or password is wrong! Try again")
             else:
                 FILE: Any = open("src/mysql_credentials.txt", 'w')
@@ -63,10 +67,13 @@ if __name__ == "__main__":
                 break
         #Creating the API itself
         server: __Main = __Main(safe_api_token = safe_api_token, weather_api_token = weather_api_token)
+        load_dotenv('JWT_auth/src/.env')
         from http_logic import HTTP
         ENVIRONMENT_DATA_NOW: HTTP.EnvironmentDataNow = HTTP.EnvironmentDataNow #importing the class that has the HTTP methods for the /actual_environment route.
         FORECAST_ENVIRONMENT_DATA: HTTP.ForecastEnvironmentData = HTTP.ForecastEnvironmentData
         OPINION: HTTP.Opinions = HTTP.Opinions
-        http_initializer: HTTP = HTTP(server.api, EnvironmentDataNow = ENVIRONMENT_DATA_NOW, ForecastEnvironmentData = FORECAST_ENVIRONMENT_DATA, Opinions = OPINION)
+        REGISTER: HTTP.Register = HTTP.Register
+        LOGIN: HTTP.Login = HTTP.Login
+        http_initializer: HTTP = HTTP(server.api, EnvironmentDataNow = ENVIRONMENT_DATA_NOW, ForecastEnvironmentData = FORECAST_ENVIRONMENT_DATA, Opinions = OPINION, Register = REGISTER, Login = LOGIN)
         server.app.run(debug = True, use_reloader = False)
         IoMySQL.remove_credentials()

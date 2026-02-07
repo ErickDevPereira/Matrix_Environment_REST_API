@@ -9,6 +9,8 @@ import math
 from db import DataManipulationLanguage, IoMySQL, DataQueryLanguage
 from os import urandom
 from mysql.connector import errors, CMySQLConnection, MySQLConnection
+from werkzeug.security import generate_password_hash, check_password_hash
+from JWT_auth import jwt_singleton, auth_jwt
 
 class HTTP:
 
@@ -47,6 +49,7 @@ class HTTP:
     class EnvironmentDataNow(ForceGET, Util, Resource):
 
         def get(self) -> Tuple[Dict[str, Any], int]:
+            self.uid, self.exp_time = auth_jwt()
             self.__std_radius: int = 10 #The standard radius to search for ionizing radiation measurement is 10km
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
@@ -99,6 +102,7 @@ class HTTP:
                         self.__ionizing_radiation_data: float = DataHandler.get_fair_radiation(self.__list_of_ir, radius = self.__real_radius) #Average of the ionizing radiations with cpm as unit.
             
             self.__BASE_JSON: Dict[str, Any] = {
+                "when_your_token_will_expire": str(self.exp_time),
                 "location" : self.__location,
                 "temperature(°C)" : self.__temp_c,
                 "wind_speed(km/h)" : self.__wind_kph,
@@ -106,7 +110,7 @@ class HTTP:
                 "pressure(mb)" : self.__pressure_mb,
                 "humidity(%)" : self.__humidity,
                 "uv" : self.__uv,
-                "precipitation(mmHg)" : self.__precipitation,
+                "precipitation(mm)" : self.__precipitation,
                 "is_day" : self.__is_day,
                 "ionizing_radiation(cpm)" : self.__ionizing_radiation_data
             } #This is the most basic json that the server will return to the user.
@@ -137,7 +141,7 @@ class HTTP:
     class ForecastEnvironmentData(ForceGET, Util, Resource):
 
         def get(self) -> Tuple[Dict[str, Any], int]:
-
+            self.uid, self.exp_time = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
 
@@ -160,7 +164,7 @@ class HTTP:
                 while True:
                     try:
                         self.__hex_token: str = urandom(8).hex()
-                        self.__token.load(self.__db, token = self.__hex_token)
+                        self.__token.load(self.__db, token = self.__hex_token, uid = self.uid)
                     except errors.IntegrityError:
                         pass
                     else:
@@ -193,7 +197,7 @@ class HTTP:
                 self.__atm.rm(self.__db, token = self.__hex_token) #Deleting data from atmosphere table.
                 self.__token.rm(self.__db, token = self.__hex_token)
                 self.__db.close() #Closing the connection to the database.
-                self.__JSON: Dict[str, Any] = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2}
+                self.__JSON: Dict[str, Any] = {"averages" : self.__SUB_JSON1, "extremes": self.__SUB_JSON2, "when_your_token_will_expire": str(self.exp_time)}
                 return self.__JSON, 200
 
     class Opinions(ForceGET, Util, Resource):
@@ -209,6 +213,7 @@ class HTTP:
 
         def get(self) -> Tuple[Dict[str, str | int | List[str]], int]:
             
+            self.uid, self.exp_time = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
 
@@ -221,12 +226,12 @@ class HTTP:
             self.__commments: List[str] = self.__dql.Opinion().get_opinions(self.__db, self.__latitude_str, self.__longitude_srt)
             self.__db.close()
             if len(self.__commments) == 0:
-                return {"message": f"No comments registered for {self.__latitude_str}, {self.__longitude_srt}"}, 200
+                return {"message": f"No comments registered for {self.__latitude_str}, {self.__longitude_srt}", "when_your_token_will_expire": str(self.exp_time)}, 200
             else:
-                return {"number_of_comments" : len(self.__commments), "comments" : self.__commments}, 200
+                return {"number_of_comments" : len(self.__commments), "comments" : self.__commments, "when_your_token_will_expire": str(self.exp_time)}, 200
 
         def post(self) -> Tuple[Dict[str, str], int]:
-
+            self.uid, self.exp_time = auth_jwt()
             self.latitude: float = request.args.get("latitude", type = float)
             self.longitude: float = request.args.get("longitude", type = float)
             self.auth(False)
@@ -241,22 +246,21 @@ class HTTP:
             while True:
                     try:
                         self.__token_POST_hex: str = urandom(8).hex()
-                        self.__tokenPOST.load(self.__db, token = self.__token_POST_hex)
+                        self.__tokenPOST.load(self.__db, token = self.__token_POST_hex, uid = self.uid)
                     except errors.IntegrityError:
                         pass
                     else:
                         break
             self.__opinionPOST.load(self.__db,
-                                    name = self.__opinion_JSON['name'],
                                     text = self.__opinion_JSON['text'],
                                     token = self.__token_POST_hex,
                                     latitude = f'{self.latitude:.3f}',
                                     longitude = f'{self.longitude:.3f}')
             self.__db.close()
-            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment"}, 201
+            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment", "when_your_token_will_expire": str(self.exp_time)}, 201
 
         def patch(self) -> Tuple[Dict[str, str], int]:
-
+            self.uid, self.exp_time = auth_jwt()
             self.__opinion_JSON: Any = self.__opinions_args.parse_args()
             self.__edit_token: None | str = self.__opinion_JSON['token']
             self.__edit_text: None | str = self.__opinion_JSON['text']
@@ -276,10 +280,11 @@ class HTTP:
             except Exception as err:
                 abort(500, message = f"Something went wrong on the database or application. Error: {err}")
             else:
-                return {"message" : "text was changed with success"}, 200
+                return {"message" : "text was changed with success", "when_your_token_will_expire": str(self.exp_time)}, 200
 
         def delete(self) -> Tuple[Dict[str, str], int]:
 
+            self.uid, self.exp_time = auth_jwt()
             self.__opinion_JSON: Any = self.__opinions_args.parse_args()
             self.__del_token: None | str = self.__opinion_JSON['token']
 
@@ -299,11 +304,73 @@ class HTTP:
                     abort(500, message = "Something went wrong on the database of the server! Try later")
                 else:
                     self.__db.close()
-                    return {"message": "The comment was deleted successfully!"}, 200
+                    return {"message": "The comment was deleted successfully!", "when_your_token_will_expire": str(self.exp_time)}, 200
             self.__db.close()
             abort(400, message = "There is no comment with such token")
+        
+    class Register(Resource):
+
+        def __init__(self):
+            super().__init__()
+            self.__reg_args = reqparse.RequestParser()
+            self.__msg = "You must fill 'email', 'first_name' and 'last_name' fields"
+            self.__reg_args.add_argument("email", type = str, help = self.__msg)
+            self.__reg_args.add_argument("first_name", type = str, help = self.__msg)
+            self.__reg_args.add_argument("last_name", type = str, help = self.__msg)
+        
+        def post(self) -> Tuple[Dict[str, str], int]:
+
+            self.JSON: Dict[str, str] = self.__reg_args.parse_args()
+            self.__email: str = self.JSON['email']
+            self.__f_name: str = self.JSON['first_name']
+            self.__l_name: str = self.JSON['last_name']
+
+            self.__credentials: Tuple[str, ...] = (self.__email, self.__f_name, self.__l_name)
+            for _ in self.__credentials:
+                if _ is None:
+                    abort(400, message = self.__msg)
+            
+            self.__api_key: str = urandom(16).hex() #Token with 16 bytes in hexadecimal (64 characters)
+            self.__dml: DataManipulationLanguage = DataManipulationLanguage()
+            self.__users: DataManipulationLanguage.Users = self.__dml.Users()
+            self.__db: CMySQLConnection | MySQLConnection = IoMySQL.get_MySQL_conn()
+            try:
+                self.__users.load(self.__db, email = self.__email, f_name = self.__f_name, l_name = self.__l_name, api_key = generate_password_hash(self.__api_key))
+            except errors.IntegrityError:
+                abort(400, message = 'ERROR: probably this email has already been used')
+            else:
+                self.__uid = DataQueryLanguage().Login().get_uid(self.__db, email = self.__email)
+                self.__suc_msg: str = "Everything went fine. Don't loose this token. You may need it to login at your account"
+                self.__db.close()
+                return {'message' : self.__suc_msg, 'token' : str(self.__uid) + '#' + self.__api_key}, 201
+
+    class Login(ForceGET, Resource):
+
+        def get(self):
+            self.__ERROR = 'Not authorized. Check your key'
+            self.__token: str = request.headers.get("key")
+            self.__login = DataQueryLanguage().Login()
+            self.__db: CMySQLConnection | MySQLConnection = IoMySQL.get_MySQL_conn()
+            self.__extracted_id = int(self.__token.split('#')[0])
+            self.__real_token = self.__token.split('#')[-1]
+            self.__user_data = self.__login.get_user_by_id(self.__db, self.__extracted_id)
+
+            if not self.__user_data:
+                abort(401, message = self.__ERROR) #Id is not present inside the users table (the key given to headers is wrong)
+
+            is_the_token_correct = check_password_hash(self.__user_data['werkzeug_api_key'], self.__real_token)
+
+            if not is_the_token_correct:
+                abort(401, message = self.__ERROR) # The token is incorrect for this id (the key given to headers is wrong)
+            
+            self.__JWT = jwt_singleton.create(self.__extracted_id) #Create the JWT token
+            self.__db.close()
+            return {"message": "You must send this JWT token at 'token' field inside the header of the requests.",
+                    "JWT_token": self.__JWT}, 200
 
     def __init__(self, api: Api, **kwargs):
         api.add_resource(kwargs['EnvironmentDataNow'], "/actual_environment")
         api.add_resource(kwargs['ForecastEnvironmentData'], "/forecast_environment")
         api.add_resource(kwargs['Opinions'], "/my_opinion")
+        api.add_resource(kwargs['Register'], "/register")
+        api.add_resource(kwargs['Login'], '/login')
