@@ -1,8 +1,10 @@
-from flask import request, abort
+from flask import request
+from flask_restful import abort
 from typing import Dict, Any
 import jwt
 import os
 from typing import Tuple
+from datetime import datetime
 
 def auth_jwt() -> Tuple[int, str]:
     jwt_token: str | None = request.headers.get("token")
@@ -20,5 +22,4 @@ def auth_jwt() -> Tuple[int, str]:
         abort(500, message = "Internal server error >>" + str(err))
     else:
         uid: int = int(payload['uid'])
-        exp_time: Any = payload['exp']
-        return uid, exp_time
+        return uid
