@@ -206,7 +206,6 @@ class HTTP:
             super().__init__() #Calls the constructor of Resource if it exists, doing whatever it needs to do on my class in order to keep the API working.
             self.__opinions_args: reqparse.RequestParser = reqparse.RequestParser()
             self.__msg: Callable[[str], str] = lambda field : f'Something went wrong with the field {field}'
-            self.__opinions_args.add_argument("name", type = str, help = self.__msg('name'))
             self.__opinions_args.add_argument("text", type = str, help = self.__msg('text'))
             self.__opinions_args.add_argument("token", type = str, help = self.__msg('token'))
             self.__dml: DataManipulationLanguage = DataManipulationLanguage() #Will be used later on POST and DELETE
@@ -237,7 +236,7 @@ class HTTP:
             self.auth(False)
             self.__opinion_JSON: Any = self.__opinions_args.parse_args()
             
-            if self.__opinion_JSON['text'] is None or self.__opinion_JSON['name'] is None:
+            if self.__opinion_JSON['text'] is None:
                 abort(400, message = 'You must give a JSON with fields "text" and "name"')
             
             self.__db: CMySQLConnection | MySQLConnection = IoMySQL.get_MySQL_conn() #Gets connection with MySQL.
@@ -257,7 +256,7 @@ class HTTP:
                                     latitude = f'{self.latitude:.3f}',
                                     longitude = f'{self.longitude:.3f}')
             self.__db.close()
-            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment", "when_your_token_will_expire": str(self.exp_time)}, 201
+            return {"token" : self.__token_POST_hex, "message": "Save this token with you. You will need it if you wish to delete or edit your comment", "when_your_JWT_token_will_expire": str(self.exp_time)}, 201
 
         def patch(self) -> Tuple[Dict[str, str], int]:
             self.uid, self.exp_time = auth_jwt()

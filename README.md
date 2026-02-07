@@ -76,5 +76,42 @@
     <img src = "imgs/actual_env.png">
     <p>JSON for endpoint GET /my_opinion?latitude=23.4558&longitude=45.6396</p>
     <img src = "imgs/get_comments.png">
+    <h2>Documentation</h2>
+    <hr>
+    <p>Send a **POST** request to `/register` with a JSON containing:</p>
+    <pre><code>
+    {
+    "email": "your_email@example.com",
+    "first_name": "YourFirstName",
+    "last_name": "YourLastName"
+    }
+    </code></pre>
+    <p>Send a GET request to /login with your API key in the request header:</p>
+    <pre><code>
+    {key: your_api_key}
+    </code></pre>
+    <p>The response will be a JSON containing a JWT token.
+This token is required to access the main endpoints and will expire after 1 hour.
+To obtain a new token, simply log in again with your API key.</p>
+    <p>For all subsequent endpoints, include the JWT token in a JSON under the field token.
+Example scripts can be found in the /test folder.</p>
+    <p><code>GET /my_opinion</code> retrieves comments about a specific point on Earth.</p>
+    <p>query parameters: <strong>latitude</strong>, <strong>longitude</strong></p>
+    <p><code>POST /my_opinion</code> submits an opinion about a specific location.</p>
+    <p>query parameters: <strong>latitude</strong>, <strong>longitude</strong></p>
+    <code><pre>JSON that must be sent on the request:
+    { "text": "My opinion about this place" }</pre></code>
+    <p><code>DELETE /my_opinion</code>deletes an existing opinion.</p>
+    <code><pre>JSON that must be sent on the request:
+    { "token": opinion_token }</pre></code>
+    <p><code>PATCH /my_opinion</code>updates the text of an existing opinion.</p>
+    <code><pre>JSON that must be sent on the request:
+    { "token": "opinion_token", "text": "Updated opinion text" }</pre></code>
+    <p><code>GET /forecast_environment</code>retrieves aggregated environmental data for the next 3 days</p>
+    <p>query parameters: <strong>latitude</strong>, <strong>longitude</strong></p>
+    <p><code>GET /actual_environment</code>retrieves current environmental data for a specific location.</p>
+    <p>query parameters: <strong>latitude</strong>, <strong>longitude</strong>, <strong>detail</strong></p>
+    <p>lagitude and longitude are float while detail is a boolean that will show the details of the information (only available for GET /actual_environment).</p>
+
 </body>
 </html>
