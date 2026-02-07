@@ -244,12 +244,12 @@ class HTTP:
             self.__tokenPOST: DataManipulationLanguage.RequestForecastToken = self.__dml.RequestForecastToken()
             while True:
                     try:
-                        self.__token_POST_hex: str = urandom(8).hex()
+                        self.__token_POST_hex: str = urandom(8).hex() #Generates a token concerning this request with 8 bytes.
                         self.__tokenPOST.load(self.__db, token = self.__token_POST_hex, uid = self.uid)
                     except errors.IntegrityError:
-                        pass
+                        pass #Occurs when the token is repeating (very rare due to the size of 64bits of the token)
                     else:
-                        break
+                        break #Gets out of the loop
             self.__opinionPOST.load(self.__db,
                                     text = self.__opinion_JSON['text'],
                                     token = self.__token_POST_hex,
@@ -311,8 +311,8 @@ class HTTP:
 
         def __init__(self):
             super().__init__()
-            self.__reg_args = reqparse.RequestParser()
-            self.__msg = "You must fill 'email', 'first_name' and 'last_name' fields"
+            self.__reg_args: Any = reqparse.RequestParser()
+            self.__msg: str = "You must fill 'email', 'first_name' and 'last_name' fields"
             self.__reg_args.add_argument("email", type = str, help = self.__msg)
             self.__reg_args.add_argument("first_name", type = str, help = self.__msg)
             self.__reg_args.add_argument("last_name", type = str, help = self.__msg)
@@ -329,40 +329,46 @@ class HTTP:
                 if _ is None:
                     abort(400, message = self.__msg)
             
-            self.__api_key: str = urandom(16).hex() #Token with 16 bytes in hexadecimal (64 characters)
+            self.__api_key: str = urandom(16).hex() #Token with 16 bytes in hexadecimal (64 characters). This will be the permanent key of the client
             self.__dml: DataManipulationLanguage = DataManipulationLanguage()
             self.__users: DataManipulationLanguage.Users = self.__dml.Users()
             self.__db: CMySQLConnection | MySQLConnection = IoMySQL.get_MySQL_conn()
             try:
+                #Inserting the user with the token in Werkzeug to avoid brute force for data leak cases.
                 self.__users.load(self.__db, email = self.__email, f_name = self.__f_name, l_name = self.__l_name, api_key = generate_password_hash(self.__api_key))
             except errors.IntegrityError:
                 abort(400, message = 'ERROR: probably this email has already been used')
             else:
-                self.__uid = DataQueryLanguage().Login().get_uid(self.__db, email = self.__email)
+                self.__uid: int = DataQueryLanguage().User().get_uid(self.__db, email = self.__email) #Id of what was loaded here
                 self.__suc_msg: str = "Everything went fine. Don't loose this token. You may need it to login at your account"
                 self.__db.close()
+                #The token vizualized by the user will be his id concatenated with his real token. He must send this concatenated key to the /login to authenticate.
                 return {'message' : self.__suc_msg, 'token' : str(self.__uid) + '#' + self.__api_key}, 201
 
     class Login(ForceGET, Resource):
 
-        def get(self):
-            self.__ERROR = 'Not authorized. Check your key'
-            self.__token: str = request.headers.get("key")
-            self.__login = DataQueryLanguage().Login()
+        def get(self) -> Tuple[Dict[str, str], int]:
+            self.__ERROR: str = 'Not authorized. Check your key'
+            self.__token: str | None = request.headers.get("key") #Catching the key. The key must be send through headers in the client side.
+            
+            if self.__token is None: #The user didn't give the key.
+                abort(401, message = 'Unauthorized: you must provide your key on the header of the request.')
+            
+            self.__login: DataQueryLanguage.User = DataQueryLanguage().User()
             self.__db: CMySQLConnection | MySQLConnection = IoMySQL.get_MySQL_conn()
-            self.__extracted_id = int(self.__token.split('#')[0])
-            self.__real_token = self.__token.split('#')[-1]
-            self.__user_data = self.__login.get_user_by_id(self.__db, self.__extracted_id)
+            self.__extracted_id: int = int(self.__token.split('#')[0])
+            self.__real_token: str = self.__token.split('#')[-1]
+            self.__user_data: Dict[str, str] | None = self.__login.get_user_by_id(self.__db, self.__extracted_id)
 
             if not self.__user_data:
                 abort(401, message = self.__ERROR) #Id is not present inside the users table (the key given to headers is wrong)
 
-            is_the_token_correct = check_password_hash(self.__user_data['werkzeug_api_key'], self.__real_token)
+            is_the_token_correct: bool = check_password_hash(self.__user_data['werkzeug_api_key'], self.__real_token)
 
             if not is_the_token_correct:
                 abort(401, message = self.__ERROR) # The token is incorrect for this id (the key given to headers is wrong)
             
-            self.__JWT = jwt_singleton.create(self.__extracted_id) #Create the JWT token
+            self.__JWT: str = jwt_singleton.create(self.__extracted_id) #Create the JWT token with this id on the payload.
             self.__db.close()
             return {"message": "You must send this JWT token at 'token' field inside the header of the requests.",
                     "JWT_token": self.__JWT}, 200

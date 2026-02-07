@@ -39,7 +39,7 @@ class DataDefinitionLanguage:
                         uid INT UNSIGNED NOT NULL,
                         FOREIGN KEY (uid) REFERENCES users(uid)
                     )
-                    """)
+                    """) #uid is the id of the guy that made the request.
         self.__cursor.close()
         self.__cursor: Any = self.__db.cursor()
         self.__cursor.execute("""

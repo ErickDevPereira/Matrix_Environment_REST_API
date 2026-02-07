@@ -156,14 +156,14 @@ class DataQueryLanguage:
             cursor.close()
             return bool(data)
 
-    class Login:
+    class User:
 
         @staticmethod
         def check_api_key(db: CMySQLConnection | MySQLConnection, api_key: str) -> int | None:
 
             cursor: Any = db.cursor()
             cursor.execute("SELECT uid FROM users WHERE api_key = %s", (api_key,))
-            dirt_data = cursor.fetchall()
+            dirt_data: List[Tuple[int, ...]] = cursor.fetchall()
             cursor.close()
             if len(dirt_data) == 0:
                 return None #There is no such api key registered on the database
@@ -174,7 +174,7 @@ class DataQueryLanguage:
 
             cursor: Any = db.cursor()
             cursor.execute("SELECT email, api_key FROM users WHERE uid = %s", (uid,))
-            dirt_data = cursor.fetchall()
+            dirt_data: List[Tuple[str, str]] = cursor.fetchall()
             cursor.close()
             if len(dirt_data) == 0:
                 return None
@@ -185,7 +185,7 @@ class DataQueryLanguage:
 
             cursor: Any = db.cursor()
             cursor.execute("SELECT uid FROM users WHERE email = %s", (email,))
-            dirt_data = cursor.fetchall()
+            dirt_data: List[Tuple[int, ...]] = cursor.fetchall()
             cursor.close()
-            result = None if not bool(dirt_data) else int(dirt_data[0][0])
+            result: None | int = None if not bool(dirt_data) else int(dirt_data[0][0])
             return result

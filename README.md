@@ -40,6 +40,7 @@
         <li>No ORM was used, providing full control over database behavior, query optimization, and overall performance through explicit SQL.</li>
         <li>A mathematical model was designed to estimate ionizing radiation levels at a given geographic point. The model defines a circular region centered at the target coordinates (latitude, longitude) and computes a weighted average of radiation measurements collected from surrounding points obtained via the Safecast API. The weights are inversely proportional to the distance from each measurement point to the center, ensuring that closer points contribute more strongly to the final estimation. This approach produces a fair and reliable result for ionizing radiation, a domain where measurements are sparse and difficult to obtain.</li>
         <li>The project architecture is fully object-oriented. Each module encapsulates a well-defined responsibility within the system, with consistent use of abstraction, polymorphism, encapsulation, multiple inheritance, and abstract base classes to enforce clear contracts and maintain extensibility.</li>
+        <li>The backend system has a register-login system. The client register an account and receives an api key as response. Afterwards, the user can login with this key in order to retrieve a JWT token. The JWT token will be used to access the main endpoints and expires after a defined time (1 hour). The JWT creates a layer of security, forcing the user to use it before accessing an endpoint instead of his/her static API key.</li>
     </ul>
     <p>Explanation of <strong>Request-scoped token processing</strong>:</p>
     <p>A token-based system was implemented to safely handle concurrent requests and temporary data processing.</p>
@@ -112,6 +113,5 @@ Example scripts can be found in the /test folder.</p>
     <p><code>GET /actual_environment</code>retrieves current environmental data for a specific location.</p>
     <p>query parameters: <strong>latitude</strong>, <strong>longitude</strong>, <strong>detail</strong></p>
     <p>lagitude and longitude are float while detail is a boolean that will show the details of the information (only available for GET /actual_environment).</p>
-
 </body>
 </html>
